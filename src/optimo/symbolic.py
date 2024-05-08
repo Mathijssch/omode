@@ -10,15 +10,6 @@ from collections import OrderedDict
 __variable_types = set([np.ndarray])
 
 
-
-def register_framework(name: str):
-    def decorator(f):
-        FRAMEWORKS[name] = f
-        f.name = name
-        return f
-    return decorator
-
-
 LOGGER = logging.getLogger(__name__)
 
 
@@ -35,7 +26,7 @@ class DimensionMismatchError(Exception):
         super().__init__(msg)
 
 
-@dataclass
+@ dataclass
 class SolverOutput:
     optimal_cost: float
     minimizer: np.ndarray
@@ -43,7 +34,7 @@ class SolverOutput:
     stats: dict
 
 
-@dataclass
+@ dataclass
 class SymbolContainer:
 
     name: str = "container"
@@ -51,11 +42,11 @@ class SymbolContainer:
     __shapes: OrderedDict = field(default_factory=OrderedDict, init=False)
     __curr_index: int = field(default_factory=lambda: 0, init=False)
 
-    @property
+    @ property
     def variables(self):
         return self.__variables
 
-    @property
+    @ property
     def shapes(self):
         return self.__shapes
 
@@ -92,20 +83,20 @@ class SymbolContainer:
         )
         self.__curr_index += index_offset
 
-    @classmethod
+    @ classmethod
     def __update_shapes_array_helper(
         cls, shape_dict: dict, curr_idx: int, name: str, shape: Tuple[int]
     ) -> int:
-        """Add the current running index and the given shape to the shape dictionary and return the total number of elements added.  
+        """Add the current running index and the given shape to the shape dictionary and return the total number of elements added.
 
         Args:
-            shape_dict (dict): shape dictionary to update 
-            curr_idx (int): running index to start from 
-            name (str): name of the variable to record the shape for 
-            shape (Tuple[int]): shape of the new variable 
+            shape_dict (dict): shape dictionary to update
+            curr_idx (int): running index to start from
+            name (str): name of the variable to record the shape for
+            shape (Tuple[int]): shape of the new variable
 
         Returns:
-            int 
+            int
         """
         shape_dict[name] = (curr_idx, shape)
         return np.prod(shape)
@@ -142,7 +133,7 @@ class SymbolContainer:
     def align(
         self, other: Union[tuple, list, dict, "SymbolContainer"]
     ) -> "SymbolContainer":
-        """Align a given container with ``self``. 
+        """Align a given container with ``self``.
 
         Map the variables in ``other`` to the symbols contained in ``self`` and return a new SymbolContainer which has the same structure as self (contains the same variables in the same order), but contains the given quantities.
 
@@ -216,18 +207,18 @@ class SymbolicFramework(ABC):
         else:
             return self.new_decision_var(name, shape, is_param=True)
 
-    @abstractmethod
+    @ abstractmethod
     def _create_decision_var(self, name: str, shape: tuple, is_param: bool):
         ...
 
     def new_decision_var(self, name: str, shape: tuple, is_param: bool = False, is_aux_var: bool = False, lower=-np.inf, upper=np.inf):
-        """Make a new decision variable and cache it. 
+        """Make a new decision variable and cache it.
 
         Args:
             name (str): Name of the variable.
-            shape (tuple): shape of the variable 
-            is_param (bool): True if the new variable is used as a parameter (i.e., a numerical value for it will be provided when the optimization problem is called) 
-            is_aux_var (bool): When true, the variable is considered an auxiliary variable, so it can be saved in a separate cache. If ``is_param`` is True, this argument is ignored. 
+            shape (tuple): shape of the variable
+            is_param (bool): True if the new variable is used as a parameter (i.e., a numerical value for it will be provided when the optimization problem is called)
+            is_aux_var (bool): When true, the variable is considered an auxiliary variable, so it can be saved in a separate cache. If ``is_param`` is True, this argument is ignored.
 
         Returns:
             The newly constructed variable
@@ -252,14 +243,14 @@ class SymbolicFramework(ABC):
     def get_cost(self, solution: SolverOutput):
         return solution.optimal_cost
 
-    @abstractmethod
+    @ abstractmethod
     def get_solver_success(self) -> bool:
-        """Return True/False if the solver succeeded/failed. 
-        If the solver has not been called yet, then return None. 
+        """Return True/False if the solver succeeded/failed.
+        If the solver has not been called yet, then return None.
         """
         ...
 
-    @property
+    @ property
     def solver_time(self) -> float:
         return self._solver_time
 
@@ -280,7 +271,7 @@ class SymbolicFramework(ABC):
 
         return self._solve(param_values, initial_guess)
 
-    @abstractmethod
+    @ abstractmethod
     def _solve(self, param_values) -> SolverOutput:
         ...
 
@@ -310,35 +301,35 @@ class SymbolicFramework(ABC):
         value = self._preprocess_constraint(expr, value)
         self._add_equality_constraint(expr, value)
 
-    @abstractmethod
+    @ abstractmethod
     def _add_inequality_constraint(self, expr, lower, upper):
-        """Add an inequality constraint assuming that the expression is symbolic and the shapes of `expr` match with `lower` and `upper`. 
+        """Add an inequality constraint assuming that the expression is symbolic and the shapes of `expr` match with `lower` and `upper`.
 
         Args:
-            expr: Expression to be constrained 
-            lower: Element-wise lower bound on the expression 
-            upper: Element-wise upper bound on the expression 
+            expr: Expression to be constrained
+            lower: Element-wise lower bound on the expression
+            upper: Element-wise upper bound on the expression
         """
         ...
 
-    @abstractmethod
+    @ abstractmethod
     def _add_equality_constraint(self, expr, value):
-        """Add an inequality constraint assuming that the expression is symbolic and the shapes of `expr` match with `lower` and `upper`. 
+        """Add an inequality constraint assuming that the expression is symbolic and the shapes of `expr` match with `lower` and `upper`.
 
         Args:
-            expr: Expression to be constrained 
+            expr: Expression to be constrained
             value: Value the expression must take
         """
         ...
 
-    @classmethod
+    @ classmethod
     def _vectorize_number(cls, value, shape):
         if isinstance(value, (int, float)):
             value = float(value) * np.ones(shape).squeeze()
         value = value.reshape(shape)
         return value
 
-    @classmethod
+    @ classmethod
     def _check_shape(cls, v1, v2):
         shape1 = cls.shape(v1)
         shape2 = cls.shape(v2)
@@ -347,65 +338,85 @@ class SymbolicFramework(ABC):
         if not all(s1 == s2 for s1, s2 in zip(shape1, shape2)):
             raise DimensionMismatchError(shape1, shape2)
 
-    @classmethod
+    @ classmethod
     def _check_symbolic(cls, expr):
         pass
 
     def set_cost(self, cost):
         self.cost = cost
 
-    @abstractmethod
+    @ abstractmethod
     def init_constraints(self):
         ...
 
-    @abstractmethod
+    @ abstractmethod
     def build():
         ...
 
-    @classmethod
+    @ classmethod
     def scalar_product(cls, a, b):
         return a.T @ b
 
-    @classmethod
+    @ classmethod
     def shape(cls, a):
         return a.shape
 
-    @classmethod
+    @ classmethod
     def size(cls, a):
         return np.prod(cls.shape(a))
 
-    @classmethod
+    @ classmethod
     def concat(cls, a):
         ...
 
-    @classmethod
+    @ classmethod
     def hstack(cls, a):
         ...
 
-    @classmethod
+    @ classmethod
     def matvec(cls, a, b):
         return a @ b
 
-    @classmethod
+    @ classmethod
     def vec(cls, vec):
         ...
 
-    @classmethod
+    @ classmethod
     def sum(cls, vector, *args, **kwargs):
         ...
 
-    @classmethod
+    @ classmethod
     def flatten_vectors(cls, vecs: Iterable):
-        """reshape all vectors in `vecs` to  (n x 1). 
+        """reshape all vectors in `vecs` to  (n x 1).
 
         Args:
-            vecs (Iterable): Iterable of expressions 
+            vecs (Iterable): Iterable of expressions
         """
         return [cls.vec(v) for v in vecs]
 
-    @classmethod
+    @ classmethod
     def l1_norm(cls, a):
         return np.sum(np.abs(a))
 
 
 FRAMEWORKS: dict[str, SymbolicFramework] = {}
+
+
+def register_framework(name: str):
+    def decorator(f):
+        f.name = name
+        return f
+    return decorator
+
+
+class NoSuchFrameworkException(Exception):
+
+    def __init__(self, f: str):
+        super().__init__(f"The symbolic framework {f} is not available. Expected one of ({', '.join(FRAMEWORKS.keys())})")
+
+
+def get_framework(name: str):
+    try:
+        return FRAMEWORKS[name]
+    except KeyError:
+        raise NoSuchFrameworkException(name)
