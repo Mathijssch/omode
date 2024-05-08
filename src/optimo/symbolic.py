@@ -404,6 +404,7 @@ FRAMEWORKS: dict[str, SymbolicFramework] = {}
 
 def register_framework(name: str):
     def decorator(f):
+        FRAMEWORKS[name] = f
         f.name = name
         return f
     return decorator
