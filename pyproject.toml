@@ -130,7 +130,10 @@ dependencies = [
 # Optional dependencies the project provides. These are commonly 
 # referred to as "extras". For a more extensive definition see:
 # https://packaging.python.org/en/latest/specifications/dependency-specifiers/#extras
-#[project.optional-dependencies]
+[project.optional-dependencies]
+cvxpy=["cvxpy"]
+casadi=["casadi"]
+all=["cvxpy", "casadi"]
 #dev = ["check-manifest"]
 #test = ["coverage"]
 
@@ -160,7 +163,6 @@ dependencies = [
 # This is configuration specific to the `setuptools` build backend.
 # If you are using a different build backend, you will need to change this.
 #[tool.setuptools]
-#packages = ["toolkit", "calibration"]
 # If there are data files included in your packages that need to be
 # installed, specify them here.
 #package-data = {"sample" = ["*.dat"]}
