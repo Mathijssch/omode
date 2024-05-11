@@ -423,6 +423,6 @@ class NoSuchFrameworkException(Exception):
 
 def get_framework(name: str) -> SymbolicFramework:
     try:
-        return FRAMEWORKS[name]
+        return FRAMEWORKS[name]()
     except KeyError:
         raise NoSuchFrameworkException(name)
