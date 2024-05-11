@@ -27,6 +27,8 @@ if TYPE_CHECKING:
 @register_framework(CASADI)
 class CasadiModel(SymbolicFramework):
 
+    nonconvex: bool = True
+
     def __init__(self, solver: str = "ipopt"):
         if not CASADI_AVAILABLE:
             raise NameError("CasADi could not be imported.")
@@ -175,6 +177,10 @@ class CasadiModel(SymbolicFramework):
     @classmethod
     def hstack(self, *arrays):
         return cs.horzcat(*arrays)
+
+    @classmethod
+    def vstack(self, *arrays):
+        return cs.vertcat(*arrays)
 
     def l1_norm(self, a):
         return cs.sum(cs.abs(a))

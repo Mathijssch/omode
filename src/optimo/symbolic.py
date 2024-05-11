@@ -180,6 +180,7 @@ class NameExistsException(ValueError):
 class SymbolicFramework(ABC):
 
     name: str = "abstract"
+    nonconvex: bool = False
 
     def __init__(self, solver_name: str = None):
         # self._main_var_shapes = dict()
@@ -279,7 +280,7 @@ class SymbolicFramework(ABC):
         u_symb = self.concat(*self.vars.values())
         size = np.prod(self.shape(u_symb))
         return solution[:size]
-
+    
     def get_numerical_decision_variable(self, solution: np.ndarray, name: str):
         return self.vars.extract_from_concatenation(solution, name)
 
@@ -374,6 +375,10 @@ class SymbolicFramework(ABC):
         ...
 
     @ classmethod
+    def vstack(cls, a):
+        ...
+
+    @ classmethod
     def matvec(cls, a, b):
         return a @ b
 
@@ -416,7 +421,7 @@ class NoSuchFrameworkException(Exception):
         super().__init__(f"The symbolic framework {f} is not available. Expected one of ({', '.join(FRAMEWORKS.keys())})")
 
 
-def get_framework(name: str):
+def get_framework(name: str) -> SymbolicFramework:
     try:
         return FRAMEWORKS[name]
     except KeyError:

@@ -128,6 +128,10 @@ class CvxpyModel(SymbolicFramework):
     def hstack(self, *arrays):
         return cp.hstack(arrays)
 
+    @classmethod
+    def vstack(self, *arrays):
+        return cp.vstack(arrays)
+
 
 # -----------------------------------------------------------
 # /// END CVXPY
