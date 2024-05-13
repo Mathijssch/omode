@@ -101,11 +101,11 @@ class CvxpyModel(SymbolicFramework):
 
         self.solver = problem
 
-    def _solve(self, param_values=SymbolContainer):
+    def _solve(self, param_values=SymbolContainer, initial_guess: np.ndarray = None):
 
         if len(self.params) > 0:
             for symb_param, num_param in zip(self.params.values(), param_values.values()):
-                symb_param.value == num_param
+                symb_param.value = num_param
         self.solver.solve(solver=cp.MOSEK)
 
         if not self.get_solver_success():
@@ -131,6 +131,10 @@ class CvxpyModel(SymbolicFramework):
     @classmethod
     def vstack(self, *arrays):
         return cp.vstack(arrays)
+
+    @classmethod
+    def sum(self, array, *args, **kwargs):
+        return cp.sum(array, *args, **kwargs)
 
 
 # -----------------------------------------------------------
