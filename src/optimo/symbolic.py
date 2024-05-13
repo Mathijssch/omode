@@ -165,6 +165,10 @@ class SymbolContainer:
         total_size = np.prod(shape)
         return np.reshape(vector[idx:idx + total_size], shape, order="F")
 
+    def __str__(self):
+        desc = [f"{n} {v.shape} (type: {type(v)})" for n, v in self.variables.items()]
+        return f"SymbolContainer {self.name}.\nVariables:\n {'; '.join(desc)}"
+
 
 class NameExistsException(ValueError):
 
@@ -273,14 +277,14 @@ class SymbolicFramework(ABC):
         return self._solve(param_values, initial_guess)
 
     @ abstractmethod
-    def _solve(self, param_values) -> SolverOutput:
+    def _solve(self, param_values, initial_guess) -> SolverOutput:
         ...
 
     def get_u_from_decision_vars(self, solution):
         u_symb = self.concat(*self.vars.values())
         size = np.prod(self.shape(u_symb))
         return solution[:size]
-    
+
     def get_numerical_decision_variable(self, solution: np.ndarray, name: str):
         return self.vars.extract_from_concatenation(solution, name)
 
@@ -368,15 +372,15 @@ class SymbolicFramework(ABC):
 
     @ classmethod
     def concat(cls, a):
-        ...
+        raise NotImplementedError()
 
     @ classmethod
     def hstack(cls, a):
-        ...
+        raise NotImplementedError()
 
     @ classmethod
     def vstack(cls, a):
-        ...
+        raise NotImplementedError()
 
     @ classmethod
     def matvec(cls, a, b):
@@ -384,11 +388,11 @@ class SymbolicFramework(ABC):
 
     @ classmethod
     def vec(cls, vec):
-        ...
+        raise NotImplementedError()
 
     @ classmethod
     def sum(cls, vector, *args, **kwargs):
-        ...
+        raise NotImplementedError()
 
     @ classmethod
     def flatten_vectors(cls, vecs: Iterable):
