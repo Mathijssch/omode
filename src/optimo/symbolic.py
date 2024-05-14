@@ -26,6 +26,12 @@ class DimensionMismatchError(Exception):
         super().__init__(msg)
 
 
+class NonConvexException(Exception):
+
+    def __init__(self, name: str):
+        super().__init__(f"Requested nonconvex solver, but {name} does not support nonconvex optimization.")
+
+
 @ dataclass
 class SolverOutput:
     optimal_cost: float
@@ -425,8 +431,15 @@ class NoSuchFrameworkException(Exception):
         super().__init__(f"The symbolic framework {f} is not available. Expected one of ({', '.join(FRAMEWORKS.keys())})")
 
 
-def get_framework(name: str) -> SymbolicFramework:
+def get_framework(name: str, nonconvex: bool = False) -> SymbolicFramework:
+    """Get the framework with the given name.
+    If `nonconvex` is True, then we check that the provided framework can
+    model nonconvex optimization problems. If it cannot, we throw an error.
+    """
     try:
-        return FRAMEWORKS[name]()
+        framework = FRAMEWORKS[name]()
+        if nonconvex and not framework.nonconvex:
+            raise NonConvexException(name)
+        return framework
     except KeyError:
         raise NoSuchFrameworkException(name)
