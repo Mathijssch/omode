@@ -112,7 +112,7 @@ class CvxpyModel(SymbolicFramework):
             # Otherwise, problem.value is inf or -inf, respectively.
             LOGGER.warn(f"Solver failed. Status: {self.solver.status}")
 
-        minimizer = np.vstack([var.value for var in self.vars])
+        minimizer = {name: var.value for name, var in self.vars.items()}
         return SolverOutput(self.solver.value, minimizer, self.get_solver_success(), self.get_solver_stats())
 
     # -----------------------------------------------------------
