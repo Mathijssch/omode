@@ -108,7 +108,7 @@ class CasadiModel(SymbolicFramework):
         if not self.verbose:
             self.solver_options = {"verbose_init": False, "print_time": False}
         if solver == "ipopt":
-            self.solver_options.update({"ipopt": {"print_level": 5}})  # "tol": 1e-4}})
+            self.solver_options.update({"ipopt": {"print_level": 0}})  # "tol": 1e-4}})
 
         if self.solver_options != {}:
             self.solver = cs.nlpsol("solver", solver, nlp, self.solver_options)
@@ -150,7 +150,9 @@ class CasadiModel(SymbolicFramework):
         measured_time = perf_counter() - start
         self._solver_time = self.solver.stats().get('t_wall_total', measured_time)
         solver_success = self.get_solver_success()
-        return SolverOutput(sol["f"].full(), sol["x"], solver_success, self.get_solver_stats())
+        solution_vec = sol["x"]
+        solution = {name: self.vars.extract_from_concatenation(solution_vec, name) for name in self.vars.keys()}
+        return SolverOutput(sol["f"].full(), solution, solver_success, self.get_solver_stats(), )
 
     def get_solver_stats(self) -> dict:
         if self.solver is None:
