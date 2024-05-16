@@ -38,6 +38,7 @@ class SolverOutput:
     minimizer: np.ndarray
     success: bool
     stats: dict
+    message: str = ""
 
 
 @ dataclass
@@ -193,10 +194,6 @@ class SymbolicFramework(ABC):
     nonconvex: bool = False
 
     def __init__(self, solver_name: str = None):
-        # self._main_var_shapes = dict()
-        # self._aux_var_shapes  = dict()
-        # self._curr_index = 0
-        # self._curr_index_aux = 0
         self.vars = SymbolContainer("vars")
         self.aux_vars = SymbolContainer("aux_vars")
         self.params = SymbolContainer("params")
@@ -412,6 +409,13 @@ class SymbolicFramework(ABC):
     @ classmethod
     def l1_norm(cls, a):
         return np.sum(np.abs(a))
+
+    @classmethod
+    def sqsum(cls, a):
+        """Return the squared norm of a vector"""
+        raise NotImplementedError()
+
+
 
 
 FRAMEWORKS: dict[str, SymbolicFramework] = {}

@@ -113,7 +113,7 @@ class CvxpyModel(SymbolicFramework):
             LOGGER.warn(f"Solver failed. Status: {self.solver.status}")
 
         minimizer = {name: var.value for name, var in self.vars.items()}
-        return SolverOutput(self.solver.value, minimizer, self.get_solver_success(), self.get_solver_stats())
+        return SolverOutput(self.solver.value, minimizer, self.get_solver_success(), self.get_solver_stats(), message=str(self.solver.status))
 
     # -----------------------------------------------------------
     # Operations
@@ -135,6 +135,10 @@ class CvxpyModel(SymbolicFramework):
     @classmethod
     def sum(self, array, *args, **kwargs):
         return cp.sum(array, *args, **kwargs)
+
+    @classmethod
+    def sqsum(self, array, **ops):
+        return cp.sum(array**2, **ops)
 
 
 # -----------------------------------------------------------
