@@ -164,6 +164,9 @@ class SymbolContainer:
         if isinstance(other, (dict, SymbolContainer)):
             return self.__align_dict(other)
 
+    def vec_to_dict(self, vector: np.ndarray):
+        return {name: self.extract_from_concatenation(vector, name) for name in self.keys()}
+
     def extract_from_concatenation(self, vector: np.ndarray, name: str):
         if name not in self.__shapes:
             raise KeyError(f"Variable with name {name} does not exist in {self.name}")
@@ -374,6 +377,14 @@ class SymbolicFramework(ABC):
         return np.prod(cls.shape(a))
 
     @ classmethod
+    def cos(cls, a):
+        return NotImplementedError()
+
+    @ classmethod
+    def sin(cls, a):
+        return NotImplementedError()
+
+    @ classmethod
     def concat(cls, a):
         raise NotImplementedError()
 
@@ -406,6 +417,13 @@ class SymbolicFramework(ABC):
         """
         return [cls.vec(v) for v in vecs]
 
+    def flatten_decision_vars(self, vars: SymbolContainer | dict = None, aux: SymbolContainer | dict = None):
+        vars = self.vars if vars is None else self.vars.align(vars)
+        aux_vars = self.aux_vars if aux is None else self.aux_vars.align(aux)
+
+        return self.concat(*self.flatten_vectors(vars.values()),
+                           *self.flatten_vectors(aux_vars.values()))
+
     @ classmethod
     def l1_norm(cls, a):
         return np.sum(np.abs(a))
@@ -415,7 +433,50 @@ class SymbolicFramework(ABC):
         """Return the squared norm of a vector"""
         raise NotImplementedError()
 
+    @classmethod
+    def bmat(cls, arrays):
+        raise NotImplementedError()
 
+    @classmethod
+    def rot_z(cls, x):
+        s = cls.sin
+        c = cls.cos
+
+        return cls.bmat(
+            ((c(x), -s(x), 0.),
+             (s(x), c(x), 0.),
+             (0., 0., 1.))
+        )
+
+    @classmethod
+    def rot_y(cls, x):
+        s = cls.sin
+        c = cls.cos
+
+        return cls.bmat(
+            ((c(x), 0, s(x)),
+             (0, 1, 0.),
+             (-s(x), 0., c(x)))
+        )
+
+    @classmethod
+    def rot_x(cls, x):
+        s = cls.sin
+        c = cls.cos
+
+        return cls.bmat(
+            ((1, 0., 0.),
+             (0, c(x), -s(x)),
+             (0., s(x), c(x))
+             )
+        )
+
+    @ classmethod
+    def rot_matrix(cls, angles):
+        Rx = cls.rot_x(angles[0])
+        Ry = cls.rot_y(angles[1])
+        Rz = cls.rot_z(angles[2])
+        return Rz @ Ry @ Rx
 
 
 FRAMEWORKS: dict[str, SymbolicFramework] = {}
@@ -435,13 +496,13 @@ class NoSuchFrameworkException(Exception):
         super().__init__(f"The symbolic framework {f} is not available. Expected one of ({', '.join(FRAMEWORKS.keys())})")
 
 
-def get_framework(name: str, nonconvex: bool = False) -> SymbolicFramework:
+def get_framework(name: str, nonconvex: bool = False, **opts) -> SymbolicFramework:
     """Get the framework with the given name.
     If `nonconvex` is True, then we check that the provided framework can
     model nonconvex optimization problems. If it cannot, we throw an error.
     """
     try:
-        framework = FRAMEWORKS[name]()
+        framework = FRAMEWORKS[name](**opts)
         if nonconvex and not framework.nonconvex:
             raise NonConvexException(name)
         return framework

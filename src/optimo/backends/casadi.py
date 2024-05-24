@@ -72,37 +72,75 @@ class CasadiModel(SymbolicFramework):
     #     return super().get_cost(solution).full()
 
     def get_solver_success(self) -> bool:
-        """Return True/False if the solver succeeded/failed. 
-        If the solver has not been called yet, then return None. 
+        """Return True/False if the solver succeeded/failed.
+        If the solver has not been called yet, then return None.
         """
         if self.solver is not None:
             return self.solver.stats()["success"]
         return
 
+    def export_cs(self, directory: str):
+        import os
+        os.makedirs(directory, exist_ok=True)
+        nlp = self.__build_nlp()
+        x = nlp["x"]
+        f = nlp["f"]
+        g = nlp["g"]
+        p = nlp["p"]
+
+        cost = cs.Function("f", [x, p], [f])
+        const = cs.Function("g", [x, p], [g])
+
+        def fn(name):
+            return os.path.join(directory, name)
+
+        with open(fn("f.cs"), "w") as file:
+            file.write(cost.serialize())
+
+        with open(fn("g.cs"), "w") as file:
+            file.write(const.serialize())
+
+        bounds = self._flatten_constraint_bounds()
+        names = ["ubg", "lbg", "ubx", "lbx"]
+
+        for name in names:
+            np.savez(fn(name + ".npz"), bounds[name])
+
     def build(self):
 
+        nlp = self.__build_nlp()
+
+        if self.solver_name in ["ipopt", "knitro", "alpaqa"]:
+            self.prepare_regular_casadi(nlp, solver=self.solver_name)
+        # elif self.solver_name == "alpaqa":
+        #     self.prepare_alpaqa(nlp)
+        else:
+            raise NotImplementedError(f"Solver {self.solver_name} is not supported!")
+
+    def flatten_decision_vars(self, vars: SymbolContainer | dict = None, aux: SymbolContainer | dict = None):
+        vars = self.vars if vars is None else self.vars.align(vars)
+        aux_vars = self.aux_vars if aux is None else self.aux_vars.align(aux)
+
+        return self.concat(*self.flatten_vectors(vars.values()),
+                           *self.flatten_vectors(aux_vars.values()))
+
+    def __build_nlp(self) -> dict:
         if self.cost is None:
             LOGGER.warn("Cost was not set! Using zero cost")
             f = 0
         else:
             f = self.cost
 
-        x = self.concat(*self.flatten_vectors(self.vars.values()),
-                        *self.flatten_vectors(self.aux_vars.values()))
-
+        # x = self.concat(*self.flatten_vectors(self.vars.values()),
+        #                 *self.flatten_vectors(self.aux_vars.values()))
+        x = self.flatten_decision_vars()
         g = self.concat(*self.flatten_vectors(self.constraints["g"]))
 
         nlp = {"f": f, "g": g, "x": x}
 
         if len(self.params) > 0:
             nlp["p"] = self.concat(*self.flatten_vectors(self.params.values()))
-
-        if self.solver_name in ["ipopt", "knitro"]:
-            self.prepare_regular_casadi(nlp, solver=self.solver_name)
-        # elif self.solver_name == "alpaqa":
-        #     self.prepare_alpaqa(nlp)
-        else:
-            raise NotImplementedError(f"Solver {self.solver_name} is not supported!")
+        return nlp
 
     def prepare_regular_casadi(self, nlp, *, solver: str = "ipopt"):
         if not self.verbose:
@@ -194,3 +232,15 @@ class CasadiModel(SymbolicFramework):
     @classmethod
     def sqsum(cls, vector):
         return cs.sumsqr(vector)
+
+    @classmethod
+    def bmat(cls, arr):
+        return cs.vertcat(*[cs.horzcat(*[col for col in row]) for row in arr])
+
+    @ classmethod
+    def cos(cls, a):
+        return cs.cos(a)
+
+    @ classmethod
+    def sin(cls, a):
+        return cs.sin(a)
