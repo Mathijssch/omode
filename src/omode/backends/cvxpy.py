@@ -1,5 +1,5 @@
-from optimo.symbolic import SymbolicFramework, SymbolContainer, SolverOutput
-from optimo.symbolic import __variable_types, register_framework
+from omode.symbolic import SymbolicFramework, SymbolContainer, SolverOutput
+from omode.symbolic import __variable_types, register_framework
 
 import numpy as np
 
