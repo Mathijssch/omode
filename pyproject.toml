@@ -2,25 +2,14 @@
 requires = ["setuptools"]               # REQUIRED if [build-system] table is used
 build-backend = "setuptools.build_meta" # If not defined, then legacy behavior can happen.
 
-
 [project]
-name = "optimo" # REQUIRED, is the only field that cannot be marked as dynamic.
-
-version = "0.0.1" # REQUIRED, although can be dynamic
-
-description = "Optimization modeling"
-
+name = "omode"
+dynamic = ["version"]
 readme = "README.md"
-
 requires-python = ">=3.9"
-
 license = { file = "LICENCE.MD" }
-
-
 authors = [{ name = "Mathijs Schuurmans", email = "info@optia.be" }]
-
 maintainers = [{ name = "Mathijs Schuurmans", email = "info@optia.be" }]
-
 classifiers = [
   #   3 - Alpha
   #   4 - Beta
