@@ -7,7 +7,7 @@ name = "omode"
 dynamic = ["version"]
 readme = "README.md"
 requires-python = ">=3.9"
-license = { file = "LICENCE.MD" }
+license = { file = "LICENSE.MD" }
 authors = [{ name = "Mathijs Schuurmans", email = "info@optia.be" }]
 maintainers = [{ name = "Mathijs Schuurmans", email = "info@optia.be" }]
 classifiers = [

@@ -4,10 +4,12 @@ from omode.symbolic import __variable_types, register_framework
 import numpy as np
 
 import logging
+
 LOGGER = logging.getLogger(__name__)
 
 try:
     import cvxpy as cp
+
     CVXPY_AVAILABLE = True
     __variable_types.add(cp.Expression)
 except ImportError:
@@ -19,14 +21,19 @@ CVXPY = "cvxpy"
 
 @register_framework(CVXPY)
 class CvxpyModel(SymbolicFramework):
-
     def __init__(self):
         if not CVXPY_AVAILABLE:
             raise NameError("CVXPY could not be imported.")
         super().__init__()
 
-    def _create_decision_var(self, name: str, shape: tuple, is_param: bool = False, **kwargs):
-        return cp.Parameter(shape, name=name, **kwargs) if is_param else cp.Variable(shape, name=name, **kwargs)
+    def _create_decision_var(
+        self, name: str, shape: tuple, is_param: bool = False, **kwargs
+    ):
+        return (
+            cp.Parameter(shape, name=name, **kwargs)
+            if is_param
+            else cp.Variable(shape, name=name, **kwargs)
+        )
 
     def init_constraints(self):
         return []
@@ -63,7 +70,15 @@ class CvxpyModel(SymbolicFramework):
                 f = f.value
         return f
 
-    def new_decision_var(self, name: str, shape: tuple, is_param: bool = False, is_aux_var: bool = False, lower=-np.inf, upper=np.inf):
+    def new_decision_var(
+        self,
+        name: str,
+        shape: tuple,
+        is_param: bool = False,
+        is_aux_var: bool = False,
+        lower=-np.inf,
+        upper=np.inf,
+    ):
         """Make a new decision variable and cache it.
 
         Args:
@@ -93,7 +108,6 @@ class CvxpyModel(SymbolicFramework):
         return solution
 
     def build(self):
-
         f = self.__get_cost()
 
         objective = cp.Minimize(f)
@@ -102,9 +116,10 @@ class CvxpyModel(SymbolicFramework):
         self.solver = problem
 
     def _solve(self, param_values=SymbolContainer, initial_guess: np.ndarray = None):
-
         if len(self.params) > 0:
-            for symb_param, num_param in zip(self.params.values(), param_values.values()):
+            for symb_param, num_param in zip(
+                self.params.values(), param_values.values()
+            ):
                 symb_param.value = num_param
         self.solver.solve(solver=cp.MOSEK)
 
@@ -113,7 +128,13 @@ class CvxpyModel(SymbolicFramework):
             LOGGER.warn(f"Solver failed. Status: {self.solver.status}")
 
         minimizer = {name: var.value for name, var in self.vars.items()}
-        return SolverOutput(self.solver.value, minimizer, self.get_solver_success(), self.get_solver_stats(), message=str(self.solver.status))
+        return SolverOutput(
+            self.solver.value,
+            minimizer,
+            self.get_solver_success(),
+            self.get_solver_stats(),
+            message=str(self.solver.status),
+        )
 
     # -----------------------------------------------------------
     # Operations
@@ -139,6 +160,10 @@ class CvxpyModel(SymbolicFramework):
     @classmethod
     def sqsum(self, array, **ops):
         return cp.sum(array**2, **ops)
+
+    @classmethod
+    def quadform(cls, x, Q):
+        return cp.quad_form(x, Q)
 
 
 # -----------------------------------------------------------

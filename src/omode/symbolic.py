@@ -14,8 +14,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class DimensionMismatchError(Exception):
-    """Exception for mismatching shapes of arrays
-    """
+    """Exception for mismatching shapes of arrays"""
 
     def __init__(self, expected=None, got=None, message=""):
         msg = f"Dimension mismatch: {message}"
@@ -27,12 +26,13 @@ class DimensionMismatchError(Exception):
 
 
 class NonConvexException(Exception):
-
     def __init__(self, name: str):
-        super().__init__(f"Requested nonconvex solver, but {name} does not support nonconvex optimization.")
+        super().__init__(
+            f"Requested nonconvex solver, but {name} does not support nonconvex optimization."
+        )
 
 
-@ dataclass
+@dataclass
 class SolverOutput:
     optimal_cost: float
     minimizer: np.ndarray
@@ -41,19 +41,18 @@ class SolverOutput:
     message: str = ""
 
 
-@ dataclass
+@dataclass
 class SymbolContainer:
-
     name: str = "container"
     __variables: OrderedDict = field(default_factory=OrderedDict, init=False)
     __shapes: OrderedDict = field(default_factory=OrderedDict, init=False)
     __curr_index: int = field(default_factory=lambda: 0, init=False)
 
-    @ property
+    @property
     def variables(self):
         return self.__variables
 
-    @ property
+    @property
     def shapes(self):
         return self.__shapes
 
@@ -90,7 +89,7 @@ class SymbolContainer:
         )
         self.__curr_index += index_offset
 
-    @ classmethod
+    @classmethod
     def __update_shapes_array_helper(
         cls, shape_dict: dict, curr_idx: int, name: str, shape: Tuple[int]
     ) -> int:
@@ -111,29 +110,49 @@ class SymbolContainer:
     def __align_iterable(self, other: list | tuple):
         new = SymbolContainer(f"{self.name}_values")
         for i, (name, expected_shape) in enumerate(self.__shapes.items()):
-            expected_shape = expected_shape[1]  # First component is the starting index of the variable.
+            expected_shape = expected_shape[
+                1
+            ]  # First component is the starting index of the variable.
             try:
                 new_value = other[i]
             except IndexError:
-                raise ValueError(f"Parameter container does not contain sufficiently many entries. Got {len(other)}. Expected {len(self)}.")
+                raise ValueError(
+                    f"Parameter container does not contain sufficiently many entries. Got {len(other)}. Expected {len(self)}."
+                )
 
             if new_value.shape != expected_shape:
-                raise DimensionMismatchError(expected_shape, new_value.shape, f"Shape mismatch for parameter {name}. ")
+                raise DimensionMismatchError(
+                    expected_shape,
+                    new_value.shape,
+                    f"Shape mismatch for parameter {name}. ",
+                )
             new.add_variable(name, new_value, new_value.shape)
         return new
 
     def __align_dict(self, other: Union[dict, "SymbolContainer"]):
-        name = f"{self.name}_values" if not isinstance(other, SymbolContainer) else other.name
+        name = (
+            f"{self.name}_values"
+            if not isinstance(other, SymbolContainer)
+            else other.name
+        )
         new = SymbolContainer(name)
         for name, expected_shape in self.__shapes.items():
-            expected_shape = expected_shape[1]  # First component is the starting index of the variable.
+            expected_shape = expected_shape[
+                1
+            ]  # First component is the starting index of the variable.
             try:
                 new_value = other[name]
             except KeyError:
-                raise ValueError(f"Parameter container does not contain an entry for the parameter {name}.")
+                raise ValueError(
+                    f"Parameter container does not contain an entry for the parameter {name}."
+                )
 
             if new_value.shape != expected_shape:
-                raise DimensionMismatchError(expected_shape, new_value.shape, f"Shape mismatch for parameter {name}. ")
+                raise DimensionMismatchError(
+                    expected_shape,
+                    new_value.shape,
+                    f"Shape mismatch for parameter {name}. ",
+                )
             new.add_variable(name, new_value, new_value.shape)
         return new
 
@@ -165,7 +184,9 @@ class SymbolContainer:
             return self.__align_dict(other)
 
     def vec_to_dict(self, vector: np.ndarray):
-        return {name: self.extract_from_concatenation(vector, name) for name in self.keys()}
+        return {
+            name: self.extract_from_concatenation(vector, name) for name in self.keys()
+        }
 
     def extract_from_concatenation(self, vector: np.ndarray, name: str):
         if name not in self.__shapes:
@@ -173,7 +194,7 @@ class SymbolContainer:
 
         idx, shape = self.__shapes[name]
         total_size = np.prod(shape)
-        return np.reshape(vector[idx:idx + total_size], shape, order="F")
+        return np.reshape(vector[idx : idx + total_size], shape, order="F")
 
     def __str__(self):
         desc = [f"{n} {v.shape} (type: {type(v)})" for n, v in self.variables.items()]
@@ -181,7 +202,6 @@ class SymbolContainer:
 
 
 class NameExistsException(ValueError):
-
     def __init__(self, name: str, container: SymbolContainer, *args: object) -> None:
         super().__init__(*args)
         self.name = name
@@ -192,7 +212,6 @@ class NameExistsException(ValueError):
 
 
 class SymbolicFramework(ABC):
-
     name: str = "abstract"
     nonconvex: bool = False
 
@@ -213,16 +232,25 @@ class SymbolicFramework(ABC):
             par = self.params[name]
             existing_shape = self.params.shapes[name][1]
             if existing_shape != shape:
-                raise DimensionMismatchError(f"Requested parameter with name `{name}` and shape {shape}. The existing parameter with this name has shape {existing_shape}.")
+                raise DimensionMismatchError(
+                    f"Requested parameter with name `{name}` and shape {shape}. The existing parameter with this name has shape {existing_shape}."
+                )
             return par
         else:
             return self.new_decision_var(name, shape, is_param=True)
 
-    @ abstractmethod
-    def _create_decision_var(self, name: str, shape: tuple, is_param: bool):
-        ...
+    @abstractmethod
+    def _create_decision_var(self, name: str, shape: tuple, is_param: bool): ...
 
-    def new_decision_var(self, name: str, shape: tuple, is_param: bool = False, is_aux_var: bool = False, lower=-np.inf, upper=np.inf):
+    def new_decision_var(
+        self,
+        name: str,
+        shape: tuple,
+        is_param: bool = False,
+        is_aux_var: bool = False,
+        lower=-np.inf,
+        upper=np.inf,
+    ):
         """Make a new decision variable and cache it.
 
         Args:
@@ -254,23 +282,30 @@ class SymbolicFramework(ABC):
     def get_cost(self, solution: SolverOutput):
         return solution.optimal_cost
 
-    @ abstractmethod
+    @abstractmethod
     def get_solver_success(self) -> bool:
         """Return True/False if the solver succeeded/failed.
         If the solver has not been called yet, then return None.
         """
         ...
 
-    @ property
+    @property
     def solver_time(self) -> float:
         return self._solver_time
 
-    def solve(self, param_values: Union[
-            list[np.ndarray], tuple[np.ndarray], dict[np.ndarray], SymbolContainer] = None,
-            initial_guess: Union[
-            list[np.ndarray], tuple[np.ndarray], dict[np.ndarray], SymbolContainer] = None) -> SolverOutput:
+    def solve(
+        self,
+        param_values: Union[
+            list[np.ndarray], tuple[np.ndarray], dict[np.ndarray], SymbolContainer
+        ] = None,
+        initial_guess: Union[
+            list[np.ndarray], tuple[np.ndarray], dict[np.ndarray], SymbolContainer
+        ] = None,
+    ) -> SolverOutput:
         if self.solver is None:
-            raise RuntimeError("Solver must be built first. See ``SymbolicFramework.build``")
+            raise RuntimeError(
+                "Solver must be built first. See ``SymbolicFramework.build``"
+            )
 
         if param_values is None:
             param_values = []
@@ -282,9 +317,8 @@ class SymbolicFramework(ABC):
 
         return self._solve(param_values, initial_guess)
 
-    @ abstractmethod
-    def _solve(self, param_values, initial_guess) -> SolverOutput:
-        ...
+    @abstractmethod
+    def _solve(self, param_values, initial_guess) -> SolverOutput: ...
 
     def get_u_from_decision_vars(self, solution):
         u_symb = self.concat(*self.vars.values())
@@ -312,7 +346,7 @@ class SymbolicFramework(ABC):
         value = self._preprocess_constraint(expr, value)
         self._add_equality_constraint(expr, value)
 
-    @ abstractmethod
+    @abstractmethod
     def _add_inequality_constraint(self, expr, lower, upper):
         """Add an inequality constraint assuming that the expression is symbolic and the shapes of `expr` match with `lower` and `upper`.
 
@@ -323,7 +357,7 @@ class SymbolicFramework(ABC):
         """
         ...
 
-    @ abstractmethod
+    @abstractmethod
     def _add_equality_constraint(self, expr, value):
         """Add an inequality constraint assuming that the expression is symbolic and the shapes of `expr` match with `lower` and `upper`.
 
@@ -333,14 +367,14 @@ class SymbolicFramework(ABC):
         """
         ...
 
-    @ classmethod
+    @classmethod
     def _vectorize_number(cls, value, shape):
         if isinstance(value, (int, float)):
             value = float(value) * np.ones(shape).squeeze()
         value = value.reshape(shape)
         return value
 
-    @ classmethod
+    @classmethod
     def _check_shape(cls, v1, v2):
         shape1 = cls.shape(v1)
         shape2 = cls.shape(v2)
@@ -349,66 +383,69 @@ class SymbolicFramework(ABC):
         if not all(s1 == s2 for s1, s2 in zip(shape1, shape2)):
             raise DimensionMismatchError(shape1, shape2)
 
-    @ classmethod
+    @classmethod
     def _check_symbolic(cls, expr):
         pass
 
     def set_cost(self, cost):
         self.cost = cost
 
-    @ abstractmethod
-    def init_constraints(self):
-        ...
+    @abstractmethod
+    def init_constraints(self): ...
 
-    @ abstractmethod
+    @abstractmethod
     def build():
-        ...
+        pass
 
-    @ classmethod
+    @classmethod
     def scalar_product(cls, a, b):
         return a.T @ b
 
-    @ classmethod
+    @classmethod
+    def quadform(cls, x, Q):
+        return cls.scalar_product(x, cls.matvec(Q, x))
+
+    @classmethod
     def shape(cls, a):
         return a.shape
 
-    @ classmethod
+    @classmethod
     def size(cls, a):
         return np.prod(cls.shape(a))
 
-    @ classmethod
+    @classmethod
     def cos(cls, a):
         return NotImplementedError()
 
-    @ classmethod
+    @classmethod
     def sin(cls, a):
         return NotImplementedError()
 
-    @ classmethod
+    @classmethod
     def concat(cls, a):
         raise NotImplementedError()
 
-    @ classmethod
+    @classmethod
     def hstack(cls, a):
         raise NotImplementedError()
 
-    @ classmethod
+    @classmethod
     def vstack(cls, a):
         raise NotImplementedError()
 
-    @ classmethod
+    @classmethod
     def matvec(cls, a, b):
         return a @ b
 
-    @ classmethod
+    @classmethod
     def vec(cls, vec):
         raise NotImplementedError()
 
-    @ classmethod
+    @classmethod
     def sum(cls, vector, *args, **kwargs):
         raise NotImplementedError()
 
-    @ classmethod
+    @classmethod
     def flatten_vectors(cls, vecs: Iterable):
         """reshape all vectors in `vecs` to  (n x 1).
 
@@ -417,14 +454,18 @@ class SymbolicFramework(ABC):
         """
         return [cls.vec(v) for v in vecs]
 
-    def flatten_decision_vars(self, vars: SymbolContainer | dict = None, aux: SymbolContainer | dict = None):
+    def flatten_decision_vars(
+        self, vars: SymbolContainer | dict = None, aux: SymbolContainer | dict = None
+    ):
         vars = self.vars if vars is None else self.vars.align(vars)
         aux_vars = self.aux_vars if aux is None else self.aux_vars.align(aux)
 
-        return self.concat(*self.flatten_vectors(vars.values()),
-                           *self.flatten_vectors(aux_vars.values()))
+        return self.concat(
+            *self.flatten_vectors(vars.values()),
+            *self.flatten_vectors(aux_vars.values()),
+        )
 
-    @ classmethod
+    @classmethod
     def l1_norm(cls, a):
         return np.sum(np.abs(a))
 
@@ -442,36 +483,23 @@ class SymbolicFramework(ABC):
         s = cls.sin
         c = cls.cos
 
-        return cls.bmat(
-            ((c(x), -s(x), 0.),
-             (s(x), c(x), 0.),
-             (0., 0., 1.))
-        )
+        return cls.bmat(((c(x), -s(x), 0.0), (s(x), c(x), 0.0), (0.0, 0.0, 1.0)))
 
     @classmethod
     def rot_y(cls, x):
         s = cls.sin
         c = cls.cos
 
-        return cls.bmat(
-            ((c(x), 0, s(x)),
-             (0, 1, 0.),
-             (-s(x), 0., c(x)))
-        )
+        return cls.bmat(((c(x), 0, s(x)), (0, 1, 0.0), (-s(x), 0.0, c(x))))
 
     @classmethod
     def rot_x(cls, x):
         s = cls.sin
         c = cls.cos
 
-        return cls.bmat(
-            ((1, 0., 0.),
-             (0, c(x), -s(x)),
-             (0., s(x), c(x))
-             )
-        )
+        return cls.bmat(((1, 0.0, 0.0), (0, c(x), -s(x)), (0.0, s(x), c(x))))
 
-    @ classmethod
+    @classmethod
     def rot_matrix(cls, angles):
         Rx = cls.rot_x(angles[0])
         Ry = cls.rot_y(angles[1])
@@ -487,13 +515,15 @@ def register_framework(name: str):
         FRAMEWORKS[name] = f
         f.name = name
         return f
+
     return decorator
 
 
 class NoSuchFrameworkException(Exception):
-
     def __init__(self, f: str):
-        super().__init__(f"The symbolic framework {f} is not available. Expected one of ({', '.join(FRAMEWORKS.keys())})")
+        super().__init__(
+            f"The symbolic framework {f} is not available. Expected one of ({', '.join(FRAMEWORKS.keys())})"
+        )
 
 
 def get_framework(name: str, nonconvex: bool = False, **opts) -> SymbolicFramework:
